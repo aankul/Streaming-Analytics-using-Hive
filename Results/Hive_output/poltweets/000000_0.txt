@@ -1,0 +1,3 @@
+negative,351
+neutral,1075
+positive,1070

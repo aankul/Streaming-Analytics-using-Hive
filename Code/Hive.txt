@@ -1,0 +1,227 @@
+
+
+-- HIVE QUIRIES...
+---------------------------------------------------------------------
+HIVE DDL
+-------------------------------------------------------------------------------
+
+add jar /user/jar_catalog/json-serde-1.3-jar-with-dependencies.jar;
+
+--create the tweets_raw table containing the records as received from Twitter
+
+CREATE EXTERNAL TABLE Mytweets_raw (
+   id BIGINT,
+   created_at STRING,
+   source STRING,
+   favorited BOOLEAN,
+   retweet_count INT,
+   retweeted_status STRUCT<
+      text:STRING,
+      `user`:STRUCT<screen_name:STRING,name:STRING>>,
+   entities STRUCT<
+      urls:ARRAY<STRUCT<expanded_url:STRING>>,
+      user_mentions:ARRAY<STRUCT<screen_name:STRING,name:STRING>>,
+      hashtags:ARRAY<STRUCT<text:STRING>>>,
+   text STRING,
+   `user` STRUCT<
+      screen_name:STRING,
+      name:STRING,
+      friends_count:INT,
+      followers_count:INT,
+      statuses_count:INT,
+      verified:BOOLEAN,
+      utc_offset:INT,
+      time_zone:STRING>,
+   in_reply_to_screen_name STRING
+) 
+ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
+WITH SERDEPROPERTIES ("ignore.malformed.json" = "true");
+--LOCATION '/user/hive/tweets';
+
+--Load data in the table
+load data inpath '/user/hive/tweets/Tweets/' INTO TABLE Mytweets_raw;
+
+-- create sentiment dictionary
+CREATE EXTERNAL TABLE dictionary (
+    type string,
+    length int,
+    word string,
+    pos string,
+    stemmed string,
+    polarity string
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t' 
+STORED AS TEXTFILE;
+--LOCATION '/user/hive/dictionary';
+
+--Loading data
+load data inpath '/user/hive/dictionary' INTO TABLE dictionary;
+
+--Created table for time zones
+CREATE EXTERNAL TABLE time_zone_map (
+    time_zone string,
+    country string
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t' 
+STORED AS TEXTFILE;
+--LOCATION '/user/hive/time_zone/time_zone_map';
+
+-- loading data to the table time_zone_map
+load data inpath '/user/hive/time_zone/time_zone_map.tsv' INTO TABLE time_zone_map;
+
+
+-- Look up for stop words
+CREATE EXTERNAL TABLE stopwords (
+word string
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+load data inpath '/user/hive/stopwords/stopwords' INTO TABLE stopwords;
+
+
+-- Clean up tweets
+CREATE VIEW tweets_simple AS
+SELECT
+  id,
+  `user`.screen_name,
+  source,
+  retweet_count,
+  entities.hashtags,
+  cast ( from_unixtime( unix_timestamp(concat( '2016 ', substring(created_at,5,15)), 'yyyy MMM dd hh:mm:ss')) as timestamp) ts,
+  text,
+  `user`.statuses_count,
+  `user`.friends_count,
+  `user`.followers_count,
+  `user`.time_zone  
+FROM Mytweets_raw;
+
+
+-- remove spam
+--datediff(from_unixtime(unix_timestamp()), ts) > 1 AND
+
+CREATE VIEW tweets_rem_spam AS
+SELECT * 
+FROM tweets_simple 
+WHERE 
+ statuses_count > 50 AND
+ friends_count/followers_count > 0.01 AND
+ length(text) > 10 AND
+ size(hashtags) < 10;
+
+
+-- add country
+CREATE VIEW tweets_clean AS
+SELECT
+  id,
+  t.screen_name,
+  source,
+  retweet_count,
+  t.hashtags,
+  ts,
+  text,
+  m.country 
+FROM tweets_simple t LEFT OUTER JOIN time_zone_map m ON t.time_zone = m.time_zone;
+
+
+ 
+ -- Compute sentiment
+create view l1 as select id, words from Mytweets_raw lateral view explode(sentences(lower(text))) dummy as words;
+
+create view l2 as select id, word from l1 lateral view explode( words ) dummy as word;
+
+
+
+-- clean the tweets (remove stopwords and non english words)
+create view l_clean as select * from l2 where l2.word not in (select * from stopwords) and regexp_replace(l2.word,'[^a-zA-Z0-9]+','') != '';
+ 
+-- Converting polarity into numerical values
+create view l3 as select 
+    id, 
+    l2.word, 
+    case d.polarity 
+      when  'negative' then 0
+      when 'positive' then 5 
+      else 2.5 end as polarity 
+ from l2 left outer join dictionary d on l2.word = d.word;
+
+
+-- Calssification into positive, negative and neutral
+ create table tweets_sentiment as select 
+  id, 
+  case 
+    when avg( polarity ) > 2.5 then 'positive' 
+    when avg( polarity ) < 2.5 then 'negative'  
+    else 'neutral' end as sentiment 
+ from l3 group by id;
+
+
+------------------------------------------------------------------------------
+--ANALYSIS
+------------------------------------------------------------------------------
+
+-- Overall rating
+select 
+  sum(a.polarity) s,
+  count(b.polarity) c,
+  sum(a.polarity)/ count(b.polarity) r
+from
+  (select * from l3 where polarity=0 or polarity=5) a
+join
+  (select * from l3 where polarity=0 or polarity=5) b
+on (a.id = b.id);
+
+
+--Rating country wise
+create view l4 as select 
+tweets_clean.country,
+avg(l3.polarity) as averg
+from l3 left outer join tweets_clean on l3.id = tweets_clean.id where l3.polarity = 0 OR l3.polarity = 5 group by tweets_clean.country having tweets_clean.country IS NOT NULL order by averg desc; 
+
+
+
+--Top 10 hashtags
+create view l5 as select ht,count(ht) as countht from Mytweets_raw lateral view explode(entities.hashtags.text) dummy as ht group by ht order by countht desc limit 10;
+
+
+
+--Rating per sources
+create view l6 as select
+substr(tweets_clean.source,instr(tweets_clean.source,">"),instr(tweets_clean.source,"</a>") - instr(tweets_clean.source,">")),
+avg(l3.polarity) as averg
+from l3 left outer join tweets_clean on l3.id = tweets_clean.id group by tweets_clean.source; 
+
+
+
+
+--Top 10 User with most tweets
+create view l7 as select screen_name,count(id) as cnt from tweets_simple group by screen_name having screen_name IS NOT NULL order by cnt desc limit 10;
+
+
+--Sentiments with count
+create view l8 as select sentiment, count(id) from tweets_sentiment ts group by sentiment;
+
+
+
+-- export data into file:-
+set hive.cli.print.header=true
+
+
+--Output in a file for analysis on Tableau
+
+
+-- Countrywise polarity
+INSERT OVERWRITE DIRECTORY '/user/hive/output/country_polarity' row format delimited fields terminated by ',' select * from l4;
+--hive -e 'select * from l4' | sed 's/[\t]/,/g'  > /user/hive/output/country_polarity/country_polarity.csv
+
+-- max hashtags
+INSERT OVERWRITE DIRECTORY '/user/hive/output/hashtags' row format delimited fields terminated by ',' select * from l5;
+
+-- sourcewise polarity
+INSERT OVERWRITE DIRECTORY '/user/hive/output/source' row format delimited fields terminated by ',' select * from l6;
+
+-- max tweets by a user
+INSERT OVERWRITE DIRECTORY '/user/hive/output/usertweets' row format delimited fields terminated by ',' select * from l7;
+
+-- no of tweets positive or negative
+INSERT OVERWRITE DIRECTORY '/user/hive/output/poltweets' row format delimited fields terminated by ',' select * from l8;

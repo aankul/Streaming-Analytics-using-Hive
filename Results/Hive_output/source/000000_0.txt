@@ -1,0 +1,86 @@
+>Buffer,2.5384615384615383
+>The Phoen Machine,2.586206896551724
+>CoSchedule,2.5
+>dlvr.it,2.4035087719298245
+>Foursquare,2.4609375
+>Our_Twitt_Bot,2.608695652173913
+>tweetpappjune,2.608695652173913
+>Twoot CB,2.586206896551724
+>travel_wordpress,2.608695652173913
+>Haku Discovery,2.7083333333333335
+>IFTTT,2.480916030534351
+>Instagram,2.5344036697247705
+>Lead Stories Feed Publisher,2.5
+>Mobile Web,2.5943396226415096
+>Fenix for Android,2.586206896551724
+>Paper.li,2.586206896551724
+>shoperka,2.5
+>Spotify,1.9230769230769231
+>Tweetbot for Mac,2.5
+>Tweetbot for iΟS,2.6132930513595167
+>trueviralnews,2.361111111111111
+>Tweetlogix,2.608695652173913
+>Twiterous,3.125
+>Esheroina,2.5
+>LetraSecreta,2.5
+>Letrasdesangre1,2.5
+>Letraunica2,2.5
+>Twitter Web Client,2.5651917900403767
+>Twitter for iPad,2.548977853492334
+>Twitter for Android,2.565872485712165
+>Twitter for iPhone,2.5692947336002465
+>UberSocial for iPhone,2.5
+>Vine - Make a Scene,2.5
+>vk.com,2.5
+>iOS,2.608695652173913
+>Botize,2.5
+>Echofon,2.5641025641025643
+>Facebook,2.5833333333333335
+>KristinaBot33,2.625
+>Google,2.3157894736842106
+>Hootsuite,2.4356223175965663
+>MouthShut_Movie_Reviews,2.5
+>Mouthshut.com,2.5
+>Plume for Android,2.282608695652174
+>OnSugar.com,2.34375
+>PlayStation(R)4,2.5
+>contests2016,2.586206896551724
+>SocialFlow,2.4305555555555554
+>Tumblr,2.5
+>TweetCaster for Android,2.5274725274725274
+>Tweetium for Windows,2.586206896551724
+>Twitter for BlackBerry,2.7163461538461537
+>Twitter for Windows Phone,2.549800796812749
+>Twitter for Windows,2.413793103448276
+>Zapp Solutions,2.380952380952381
+>TweetDeck,3.0371203599550056
+>App4SPRitual,2.5
+>AppBriansinsuertemx,2.5
+>AppParaSpd7,2.5
+>Apppararit,2.5
+>Appsmxenabandono,2.5
+>Appspicsincreiblesmx,2.5
+>DivinoCelula3,2.5
+>IoneCelula1,2.5
+>OjoCelula1,2.5
+>SPDLeyFemenina4,2.5
+>apieslocuraporti2,2.5
+>appPicsterror,2.5
+>eiiadiceapi4,2.5
+>espoetacursi4,2.5
+>Mobile Web (M2),3.2142857142857144
+>Mobile Web (M5),2.539525691699605
+>RoundTeam,2.4495967741935485
+>Estintadeamor2,2.5
+>App Sonmujereses,2.5
+>App TuMismaEstrella2,2.5
+>apibellosescritos3,2.5
+>apiesamorinfinito1,2.5
+>apieslocuradeamor1,2.5
+>apinotapoeticaes2,2.5
+>sorryiamspoeko_demo_app,2.75
+>app2 samir,2.5
+>Vine for Android,2.2916666666666665
+>SPDMEMESD2,2.5
+>tacodeltiempo,2.5
+>VOICEOFTV USA,2.25
